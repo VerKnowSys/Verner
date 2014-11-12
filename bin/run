@@ -1,0 +1,49 @@
+#!/bin/sh
+
+set -e
+
+if [ ! -f /etc/sofin.conf.sh ]; then
+    printf "No Sofin installed. Aborted.\n"
+    exit 1
+fi
+
+. /etc/sofin.conf.sh
+
+SOFIN_DEFINITIONS_REPO="/Projects/Sofin-definitions" #"https://github.com/VerKnowSys/sofin-definitions.git"
+
+TODAY="$(${DATE_BIN} +%F)"
+WORK_DIR="/tmp/verner-work/${TODAY}"
+DEFINITIONS_DIR="${WORK_DIR}/definitions/definitions/"
+mkdir -p "${WORK_DIR}"
+
+note "Cloning to ${WORK_DIR}"
+cd ${WORK_DIR}
+
+note "Processing definitions"
+if [ ! -d "definitions" ]; then
+    ${GIT_BIN} clone ${SOFIN_DEFINITIONS_REPO} definitions
+    cd definitions/definitions
+else
+    cd definitions
+    ${GIT_BIN} pull origin stable
+    cd definitions
+fi
+
+
+check_start=$(${SOFIN_MICROSECONDS_UTILITY_BIN})
+note "Check start: ${start}"
+for i in *.def; do
+    start=$(${SOFIN_MICROSECONDS_UTILITY_BIN})
+    . "defaults.def"
+    . "${i}"
+    if [ "${APP_ORIGIN}" != "" ]; then
+        note "Processing origin check of definition: $i"
+        # take app version, cut only major version from it
+        # look for pattern on APP_ORIGIN site, match minor (patch) version with current one
+    fi
+    end=$(${SOFIN_MICROSECONDS_UTILITY_BIN})
+    note "Processed ${i} in $(${PRINTF_BIN} "(${end} - ${start})/1000\n" | ${BC_BIN})ms"
+done
+check_end=$(${SOFIN_MICROSECONDS_UTILITY_BIN})
+note "Whole process took: $(${PRINTF_BIN} "(${check_end} - ${check_start})/1000\n" | ${BC_BIN})ms"
+
